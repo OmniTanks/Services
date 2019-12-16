@@ -6,6 +6,7 @@ using System.IO;
 using Microsoft.EntityFrameworkCore;
 
 using Central.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace Central.Databases
 {
@@ -13,6 +14,8 @@ namespace Central.Databases
     {
         public DbSet<User> Users { get; set; }
         public DbSet<Access> Accesses { get; set; }
+
+        public DbSet<AuthToken> AuthTokens { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -26,7 +29,7 @@ namespace Central.Databases
         
         public string FindIDByMacAddress(string addres)
         {
-            var query = from usr in Users where usr.Email == addres.ToUpperInvariant() select usr;
+            var query = Users.Where(u => u.Email == addres.ToUpperInvariant() && u.Active != 0);
             var user = query.FirstOrDefault<User>();
 
             if (user != null)
@@ -37,7 +40,7 @@ namespace Central.Databases
 
         public User GetUserByID(string id)
         {
-            var query = from usr in Users where usr.ID == id.ToUpperInvariant() select usr;
+            var query = Users.Where(u => u.ID == id.ToUpperInvariant() && u.Active != 0);
             var user = query.FirstOrDefault<User>();
 
             if (user != null)
@@ -54,85 +57,89 @@ namespace Central.Databases
             return user != null;
         }
 
-        private string[] FirstNames = new string[]{ "Magic",
-                                                    "Lemon",
-                                                    "Sweetie",
-                                                    "Frosty",
-                                                    "Jewel",
-                                                    "Brilliant",
-                                                    "Stormy",
-                                                    "Twinkle",
-                                                    "Dewdrop",
-                                                    "Sky",
-                                                    "Pepper",
-                                                    "Dusty",
-                                                    "Fire",
-                                                    "Sparkle",
-                                                    "Midnight",
-                                                    "Crystal",
-                                                    "Cool",
-                                                    "Minty",
-                                                    "Cloud",
-                                                    "Citrus",
-                                                    "Peach",
-                                                    "Bubble",
-                                                    "Berry",
-                                                    "Light",
-                                                    "Beauty",
-                                                    "Rose",
-                                                    "Dawn",
-                                                    "Cocoa",
-                                                    "Summer",
-                                                    "Star",
-                                                    "Speedy",
-                                                    "Whirly",
-                                                    "Lucky",
-                                                    "Gold"
-                                                    };
-
-        private string[] LastNamed = new string[] { "Red",
-                                                    "Mint",
-                                                    "Flip",
-                                                    "Skipper",
-                                                    "Dahlia",
-                                                    "Tangy",
-                                                    "Pink",
-                                                    "Berry",
-                                                    "Poppy",
-                                                    "Bright",
-                                                    "Glow",
-                                                    "Sugar",
-                                                    "Dasher",
-                                                    "Muffin",
-                                                    "Dash",
-                                                    "Comet",
-                                                    "Onyx",
-                                                    "Glory",
-                                                    "Treat",
-                                                    "Apple",
-                                                    "Lilac",
-                                                    "Dreams",
-                                                    "Emerald",
-                                                    "Jubilee",
-                                                    "Joy",
-                                                    "Heart",
-                                                    "Eyes",
-                                                    "Sunset",
-                                                    "Pie",
-                                                    "Blueberry",
-                                                    "Flitter",
-                                                    "Magenta"
-                                                };
-
-
-        private string RandomElement(string[] contents)
+        public User CreateTemporaryUser(string macAddress)
         {
-            return contents[new Random().Next(contents.Length)];
+            User newUser = new User();
+            while (newUser.Name == string.Empty || NameExists(newUser.Name))
+                newUser.Name = NameGenerator.Generate();
+
+            newUser.ID = NewID();
+            newUser.Temporary = 1;
+            newUser.Email = macAddress;
+            newUser.Hash = NewToken();
+            newUser.Permissions = "Temp";
+            newUser.State = "Temp";
+            newUser.CreateDate = new DateTime(DateTime.Now.Ticks);
+            newUser.LastUsedDate = newUser.CreateDate;
+            newUser.Active = 1;
+            newUser.CosmeticsSettings = new LocalSettingsDB().GetSetting("TempCosmetics");
+            if (newUser.CosmeticsSettings == string.Empty)
+                newUser.CosmeticsSettings = new CosmeticsGroup().Serialize();
+
+            Users.Add(newUser);
+            SaveChangesAsync();
+
+            return newUser;
         }
 
-        public string GenerateName()
+        public static string NewToken()
         {
-            return RandomElement(FirstNames) + RandomElement(LastNamed) + new Random().Next(12, 99).ToString();
+            Random rng = new Random();
+            return rng.Next(10000, 99999).ToString() + rng.Next(10000, 99999).ToString() + DateTime.Now.GetHashCode().ToString();
+        }
+
+        public string NewID()
+        {
+            Random rng = new Random();
+            string ID = string.Empty;
+
+            while(ID == string.Empty || GetUserByID(ID) != null)
+                ID = rng.Next(100000, 999999).ToString() + rng.Next(100000, 999999).ToString();
+
+            return ID;
+        }
+
+        public string AuthenticateUser (string userID, string credentials, string userAddress)
+        {
+            User user = GetUserByID(userID);
+            if (user == null)
+                return string.Empty;
+
+            if (user.Temporary != 0)
+            {
+                if (user.Hash != credentials)
+                    return string.Empty;
+            }
+            else
+            {
+                PasswordHasher<User> hasher = new PasswordHasher<User>();
+                var result = hasher.VerifyHashedPassword(user, user.Hash, credentials);
+                if (result == PasswordVerificationResult.Failed)
+                    return string.Empty;
+
+                if (result == PasswordVerificationResult.SuccessRehashNeeded)
+                {
+                    user.Hash = hasher.HashPassword(user, credentials);
+                    SaveChanges();
+                }
+            }
+
+            user.LastUsedDate = new DateTime(DateTime.Now.Ticks);
+            Access access = new Access();
+            access.UserID = user.ID;
+            access.Timestamp = user.LastUsedDate;
+            Accesses.Add(access);
+
+            AuthToken token = new AuthToken();
+            token.Token = NewToken();
+            token.UserID = userID;
+            token.UserAddress = userAddress;
+            token.CreateDate = user.LastUsedDate;
+            token.LastUsedDate = user.LastUsedDate;
+            AuthTokens.Add(token);
+            SaveChangesAsync();
+
+            return token.Token;
         }
     }
 }

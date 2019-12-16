@@ -12,6 +12,6 @@ namespace Central.Models.Responces
         public string UserName { get; set; } = string.Empty;
         public string AccessKey { get; set; } = string.Empty;
         public string AuthenticationToken { get; set; } = string.Empty;
-        public CosmeticsGroup Cosmentics { get; set; } = new CosmeticsGroup();
+        public CosmeticsGroup Cosmetics { get; set; } = new CosmeticsGroup();
     }
 }

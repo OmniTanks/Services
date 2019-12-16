@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using Central.Models.Requests;
 using Central.Models.Responces;
+using Central.Models;
 
 namespace Central.Controllers
 {
@@ -20,30 +21,44 @@ namespace Central.Controllers
         {
             GenerateAnonUserResponce responce = new GenerateAnonUserResponce();
 
-            using (var userDB = new Databases.UserDB())
+            if (!ValidMac(request.MacAddress))
             {
-                string id = userDB.FindIDByMacAddress(request.MacAddress);
-                if (id != string.Empty)
+                responce.Result = "ERROR";
+            }
+            else
+            {
+                using (var userDB = new Databases.UserDB())
                 {
-                    var user = userDB.GetUserByID(id);
+                    User user = null;
+                    string id = userDB.FindIDByMacAddress(request.MacAddress); // see if we think we know who they are
+                    if (id != string.Empty)
+                        user = userDB.GetUserByID(id);
+                    else
+                        user = userDB.CreateTemporaryUser(request.MacAddress);
+
                     responce.Result = "OK";
                     responce.UserID = user.ID;
                     responce.UserName = user.Name;
                     responce.AccessKey = user.Hash;
-                    responce.AuthenticationToken = "GenTOKEN"; // userDB.NewToken(user);
-                }
-                else
-                {
-                    string name = string.Empty;
-                    while (name == string.Empty || userDB.NameExists(name))
-                    {
-                        name = userDB.GenerateName();
-                    }
-
-                    responce.UserName = name;
+                    responce.AuthenticationToken = userDB.AuthenticateUser(user.ID, user.Hash, Request.HttpContext.Connection.RemoteIpAddress.ToString());
                 }
             }
             return responce;
+        }
+
+        protected bool ValidMac(string mac)
+        {
+            string[] parts = mac.Split('-');
+            if (parts.Length != 6)
+                return false;
+
+            foreach (var part in parts)
+            {
+                if (!byte.TryParse(part,System.Globalization.NumberStyles.HexNumber, null,  out byte b))
+                    return false;
+            }
+
+            return true;
         }
     }
 }
