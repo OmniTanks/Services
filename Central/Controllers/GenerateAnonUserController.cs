@@ -21,7 +21,7 @@ namespace Central.Controllers
         {
             GenerateAnonUserResponce responce = new GenerateAnonUserResponce();
 
-            if (!ValidMac(request.MacAddress))
+            if (!RegisterUserController.ValidMac(request.MacAddress))
             {
                 responce.Result = "ERROR";
             }
@@ -30,7 +30,7 @@ namespace Central.Controllers
                 using (var userDB = new Databases.UserDB())
                 {
                     User user = null;
-                    string id = userDB.FindIDByMacAddress(request.MacAddress); // see if we think we know who they are
+                    string id = userDB.FindIDByAddress(request.MacAddress); // see if we think we know who they are
                     if (id != string.Empty)
                         user = userDB.GetUserByID(id);
                     else
@@ -46,19 +46,6 @@ namespace Central.Controllers
             return responce;
         }
 
-        protected bool ValidMac(string mac)
-        {
-            string[] parts = mac.Split('-');
-            if (parts.Length != 6)
-                return false;
-
-            foreach (var part in parts)
-            {
-                if (!byte.TryParse(part,System.Globalization.NumberStyles.HexNumber, null,  out byte b))
-                    return false;
-            }
-
-            return true;
-        }
+       
     }
 }
