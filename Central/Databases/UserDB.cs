@@ -14,8 +14,8 @@ namespace Central.Databases
     {
         public DbSet<User> Users { get; set; }
         public DbSet<Access> Accesses { get; set; }
-
         public DbSet<AuthToken> AuthTokens { get; set; }
+        public DbSet<UserReset> UserResets { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -38,15 +38,21 @@ namespace Central.Databases
             return string.Empty;
         }
 
+        public User FindByAddress(string addres)
+        {
+            var query = Users.Where(u => u.Email == addres.ToUpperInvariant() && u.Active != 0);
+            return query.FirstOrDefault<User>();
+        }
+
         public User FindByName (string name)
         {
-            TimeSpan maxTempAge = new TimeSpan(30, 0, 0);
+            TimeSpan maxTempAge = new TimeSpan(30, 0, 0, 0);
             string days =  new LocalSettingsDB().GetSetting("MaxTempAge");
             if (days != string.Empty)
             {
                 int d = 0;
                 if (int.TryParse(days,out d))
-                    maxTempAge = new TimeSpan(d, 0, 0);
+                    maxTempAge = new TimeSpan(d, 0, 0, 0);
             }
 
             DateTime cutoff = DateTime.Now - maxTempAge;
@@ -246,6 +252,37 @@ namespace Central.Databases
             SaveChangesAsync();
 
             return token.Token;
+        }
+
+        public UserReset UserHasActiveReset(User user)
+        {
+            TimeSpan maxTempAge = new TimeSpan(12, 0, 0);
+            string days = new LocalSettingsDB().GetSetting("MaxResetAge");
+            if (days != string.Empty)
+            {
+                int d = 0;
+                if (int.TryParse(days, out d))
+                    maxTempAge = new TimeSpan(d, 0, 0);
+            }
+
+            DateTime cutoff = DateTime.Now - maxTempAge;
+
+            return UserResets.Where(r => r.UserID == user.ID && r.Requested > cutoff && r.Used != DateTime.MinValue).FirstOrDefault();
+        }
+
+        public bool ApplyUserReset(User user, string tempPass, string newPass)
+        {
+            UserReset reset = UserHasActiveReset(user);
+
+            if (reset.TempHash != tempPass)
+                return false;
+
+            reset.Used = new DateTime(DateTime.Now.Ticks);
+            PasswordHasher<User> hasher = new PasswordHasher<User>();
+            user.Hash = hasher.HashPassword(user, newPass);
+            SaveChanges();
+
+            return true;
         }
     }
 }
