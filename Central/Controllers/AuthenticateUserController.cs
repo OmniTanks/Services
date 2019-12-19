@@ -67,7 +67,7 @@ namespace Central.Controllers
                         responce.UserName = user.Name;
                         responce.AuthenticationToken = userDB.AuthenticateUser(user.ID, request.Password, Request.HttpContext.Connection.RemoteIpAddress.ToString());
                         responce.Cosmetics = new CosmeticsGroup();
-                        responce.Cosmetics.Dese                                           rialize(user.CosmeticsSettings);
+                        responce.Cosmetics.Deserialize(user.CosmeticsSettings);
                     }
                 }
             }

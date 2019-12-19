@@ -29,7 +29,7 @@ namespace Central.Databases
         
         public string FindIDByAddress(string addres)
         {
-            var query = Users.Where(u => u.Email == addres.ToUpperInvariant() && u.Active != 0);
+            var query = Users.Where(u => string.Equals(u.Email, addres, StringComparison.OrdinalIgnoreCase) && u.Active != 0);
             var user = query.FirstOrDefault<User>();
 
             if (user != null)
@@ -40,7 +40,7 @@ namespace Central.Databases
 
         public User FindByAddress(string addres)
         {
-            var query = Users.Where(u => u.Email == addres.ToUpperInvariant() && u.Active != 0);
+            var query = Users.Where(u => string.Equals(u.Email, addres, StringComparison.OrdinalIgnoreCase) && u.Active != 0);
             return query.FirstOrDefault<User>();
         }
 
@@ -57,13 +57,13 @@ namespace Central.Databases
 
             DateTime cutoff = DateTime.Now - maxTempAge;
 
-            var query = Users.Where(u => u.Name.ToUpperInvariant() == name.ToUpperInvariant() && u.Active != 0 && (u.Temporary == 0 || u.LastUsedDate > cutoff));
+            var query = Users.Where(u => string.Equals(u.Name, name, StringComparison.OrdinalIgnoreCase) && u.Active != 0 && (u.Temporary == 0 || u.LastUsedDate > cutoff));
             return query.FirstOrDefault<User>();
         }
 
         public User GetUserByID(string id)
         {
-            var query = Users.Where(u => u.ID == id.ToUpperInvariant() && u.Active != 0);
+            var query = Users.Where(u => u.ID == id && u.Active != 0);
             var user = query.FirstOrDefault<User>();
 
             if (user != null)
@@ -128,8 +128,7 @@ namespace Central.Databases
         public User CreateUser(string userName, string email, string password)
         {
             User newUser = new User();
-            while (newUser.Name == string.Empty || NameExists(newUser.Name))
-                newUser.Name = NameGenerator.Generate();
+            newUser.Name = userName;
 
             PasswordHasher<User> hasher = new PasswordHasher<User>();
 
