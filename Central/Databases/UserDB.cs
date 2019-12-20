@@ -83,7 +83,7 @@ namespace Central.Databases
         public User CreateTemporaryUser(string macAddress)
         {
             User newUser = new User();
-            while (newUser.Name == string.Empty || NameExists(newUser.Name))
+            while (string.IsNullOrEmpty(newUser.Name) || NameExists(newUser.Name))
                 newUser.Name = NameGenerator.Generate();
 
             newUser.ID = NewID();
@@ -116,6 +116,7 @@ namespace Central.Databases
             user.State = "Unverified";
             user.LastUsedDate = new DateTime(DateTime.Now.Ticks);
             user.Active = 1;
+            user.VerificationHash = NewToken();
             user.CosmeticsSettings = new LocalSettingsDB().GetSetting("RegCosmetics");
             if (user.CosmeticsSettings == string.Empty)
                 user.CosmeticsSettings = new CosmeticsGroup().Serialize();
@@ -141,6 +142,7 @@ namespace Central.Databases
             newUser.CreateDate = new DateTime(DateTime.Now.Ticks);
             newUser.LastUsedDate = newUser.CreateDate;
             newUser.Active = 1;
+            newUser.VerificationHash = NewToken();
             newUser.CosmeticsSettings = new LocalSettingsDB().GetSetting("RegCosmetics");
             if (newUser.CosmeticsSettings == string.Empty)
                 newUser.CosmeticsSettings = new CosmeticsGroup().Serialize();

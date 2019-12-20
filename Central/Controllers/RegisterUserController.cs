@@ -71,6 +71,7 @@ namespace Central.Controllers
                         responce.AuthenticationToken = userDB.AuthenticateUser(user.ID, request.Password, Request.HttpContext.Connection.RemoteIpAddress.ToString());
                         responce.Cosmetics = new CosmeticsGroup();
                         responce.Cosmetics.Deserialize(user.CosmeticsSettings);
+                        Mailer.SendRegistrationEmail(user);
                     }
                 }
             }

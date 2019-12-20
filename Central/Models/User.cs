@@ -21,7 +21,7 @@ namespace Central.Models
         public int Active { get; set; }
         public DateTime CreateDate { get; set; }
         public DateTime LastUsedDate { get; set; }
-
+        public string VerificationHash { get; set; }
         public List<Access> Accesses { get; set; }
     }
 }

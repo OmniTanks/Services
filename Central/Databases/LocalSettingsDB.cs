@@ -25,7 +25,7 @@ namespace Central.Databases
 
         public string GetSetting(string name)
         {
-            var query = Settings.Where(set => set.Name == name.ToUpperInvariant());
+            var query = Settings.Where(set => String.Equals(set.Name, name,StringComparison.OrdinalIgnoreCase));
             var item = query.FirstOrDefault<Setting>();
 
             if (item != null)
@@ -36,7 +36,7 @@ namespace Central.Databases
 
         public List<string> GetSettings(string name)
         {
-            var query = Settings.Where(set => set.Name == name.ToUpperInvariant());
+            var query = Settings.Where(set => String.Equals(set.Name, name, StringComparison.OrdinalIgnoreCase));
 
             List<string> vals = new List<string>();
             foreach (var item in query)
