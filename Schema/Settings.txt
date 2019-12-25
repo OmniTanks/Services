@@ -1,0 +1,14 @@
+MaxTempAge	The time in days before a temp name can be reused
+TempCosmetics	The cosmetics descriptor to apply to temporary users
+RegCosmetics	The cosmetics descriptor to apply to newly registered users
+MaxResetAge	The thime in hours that a reset code is viable
+RegMailFrom	The email address that email verification messages come from
+RegMailBodyTemplate	The body of the email verifificaiton message
+RegMailSubjectTemplate	The subject of the email verifificaiton message
+MailSMPTServer	The server to use for sending email
+MailSMTPUser	The username to use for the SMTP server
+MailSMTPPassword	The password to use for SMTP server
+ResetMailFrom	The email address that password reset messages come from
+ResetMailBodyTemplate	The body of the password reset message
+ResetMailSubjectTemplate	The subject of the password reset message
+MailLinkURL	url to use to replace "[URL]" in mail messages
