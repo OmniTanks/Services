@@ -33,6 +33,25 @@ CREATE TABLE `accesses` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `userresets`
+--
+
+DROP TABLE IF EXISTS `userresets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `userresets` (
+  `index` int(11) NOT NULL AUTO_INCREMENT,
+  `userid` varchar(45) DEFAULT NULL,
+  `temphash` varchar(255) DEFAULT NULL,
+  `requested` datetime DEFAULT NULL,
+  `used` datetime DEFAULT NULL,
+  `active` int(11) DEFAULT NULL,
+  PRIMARY KEY (`index`),
+  KEY `userid_idx` (`userid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `users`
 --
 
@@ -66,4 +85,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2019-12-15 21:40:31
+-- Dump completed on 2019-12-18 21:40:18
